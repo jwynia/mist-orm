@@ -1,44 +1,404 @@
-# Bare Context Network
-This project is a starter template for a generic context-network (more info at https://jwynia.github.io/context-networks/). It can be used as a collaboration context manager for a wide range of projects. They are used for software projects, writing projects of all kinds (fiction, non-fiction, marketing, technical, etc.), building knowledge bases, managing research and analysis and more.
+# Mist
 
-This particular template repository is generic so that it isn't aimed at any one of those project types. Other templates exist (or will soon) that are aimed at common project types. Look at those and use one if it seems like a good match. But, if not, use this one.
+> Convention-based data layer for TypeScript. Write interfaces, get a database.
 
-## Getting Started
-Context networks are intended to be used with an LLM agent that has file access to all of the files in the project folder. For people in software development professions, that can be agents they write. But, for most people, the easiest access to such agents is via IDE coding tools.
+[![npm version](https://badge.fury.io/js/mist.svg)](https://www.npmjs.com/package/mist)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Set up the prompts (see below) and start a planning conversation and describe your project, your goals, your constraints, etc. When the plan looks good, let it enhance the context network. Then start with real tasks for the project.
+Mist auto-generates [Drizzle ORM](https://orm.drizzle.team/) schemas from your TypeScript interfaces using sensible conventions. No schema files, no boilerplate—just clean domain models and a fully-functional database.
 
-## Cost
-Because context networks are a relatively cutting-edge approach to collaboration with LLM AI agents, these tools do cost money and some of the best of them can cost more money than you may be expecting. The costs on such things are dropping and much of what we're doing with context networks is figuring out the ways to work that will be more widespread next year and beyond, when these costs drop. If these tools are too expensive for your budget, that probably means you need to wait a bit.
+```typescript
+// Write this
+export interface User {
+  name: string
+  email: string
+}
 
-## Tools
-Cursor (https://www.cursor.com/) is an all-in-one that comes with LLM chat and an agent that can act on the files.
+// Get this (automatically)
+// - Database table with id, createdAt, updatedAt
+// - Type-safe CRUD operations  
+// - Migrations
+// - Works with Postgres or SQLite
+```
 
-Cursor is built on VSCode (https://code.visualstudio.com/), which is a more generic code/text editor that can have plugins added. One we use a lot with context networks is Cline (https://cline.bot/). Cline's agent can be pointed at a wide range of LLM APIs that you use your own keys/billing for or their own management of that. A popular solution is to use OpenRouter (https://openrouter.ai/) which lets you use most of the LLM models available today.
+## Why Mist?
 
-## Patterns
-### Prompts
-For whatever agent you use, you need to include instructions in the system prompt or custom instructions that tell it about context networks and how to navigate them. The prompt in /inbox/custom-instructions-prompt.md is the one a lot of people are using for Cline with Claude Sonnet as the model.
+**Stop writing schema definitions.** If you're building a typical CRUD app where most tables follow standard patterns (id, timestamps, simple relationships), you're rewriting the same schema boilerplate over and over.
 
-Add it in either your agent's configuration screen or via it's file-based prompt management system.
+**Mist applies conventions:**
+- Every table gets `id`, `createdAt`, `updatedAt`
+- `userId` automatically references `users.id`
+- TypeScript types map to SQL types
+- Interfaces define your schema
 
-### Plan/Act and Specific Scope
-Cline and many other agents have multiple modes, usually offering one that lets you have a conversation with it separate from it taking action on files. In Cline, that's "Plan". In that mode, it won't make any changes to your files.
+**For complex cases,** drop down to explicit Drizzle schemas. Mist is a layer on top, not a replacement.
 
-Use that mode aggressively to get to a specific plan for what will happen when you toggle to act. That plan should have a clear definition of what "done" will look like, should be as close to a single action as possible.
+## Quick Start
 
-That often means that the action is to detail out a list of tasks that you'll actually have the agent do separately, one at a time. The "do one thing" can mean break the existing scope down another level to get to a more detailed plan. 
+Install:
 
-Basically, the more specific the action that Act mode or its equivalent is given, the better job it will do at managing token budget, at not volunteering to do a bunch of extra things,  and the more likely it does something you've already had a chance to approve.
+```bash
+npm install mist
+```
 
-### Monitor and Interrupt
-The more you actually read and monitor what your agent is doing for anything that you disagree with or sounds incorrect and step in to interrupt, the better your context network will mature. Like hiring a new assistant, where for the first few weeks, you have to tell them your preferences and ways you want things done, it pays off over the long haul.
+Create a config file:
 
-Interrupt, flip to Plan mode, and ask things like:
+```typescript
+// mist.config.ts
+export default {
+  models: 'src/models/**/*.ts',
+  output: '.mist',
+  connection: process.env.DATABASE_URL || './dev.db'
+}
+```
 
-* How can we document into the context network a way of working so we don't repeat (the problem/misunderstanding above)?
-* I'd really prefer we always write out a plan with tasks before doing things ad hoc. How can we clarify what's in the context network to make that our process going forward?
+Define your models:
 
+```typescript
+// src/models/user.ts
+export interface User {
+  name: string
+  /** @unique */
+  email: string
+  age?: number
+}
 
-### Retrospective
-At the end of tasks and periodically AS a new task, ask how things could be improved. For task end, "What from this conversation and task should be documented in the context network?" For periodic retrospectives, "What have we learned in this project that could be used to improve the context network for our efforts going forward?"
+// src/models/post.ts  
+export interface Post {
+  title: string
+  content: string
+  userId: string  // Auto-detected foreign key
+  published: boolean
+}
+```
+
+Generate and use:
+
+```bash
+# Generate schemas
+npx mist generate
+
+# Or run in watch mode
+npx mist dev
+```
+
+```typescript
+// Use in your app
+import { db } from 'mist'
+import type { User, Post } from './models'
+
+const user = await db.users.insert({
+  name: 'Alice',
+  email: 'alice@example.com'
+} as User)
+
+const post = await db.posts.insert({
+  title: 'Hello World',
+  content: 'My first post',
+  userId: user.id,
+  published: true
+} as Post)
+
+const posts = await db.posts.findMany({ 
+  userId: user.id 
+} as Post)
+```
+
+## Conventions
+
+Mist follows simple, predictable conventions:
+
+### Primary Keys
+```typescript
+interface User {
+  // id: string is added automatically (UUID)
+  name: string
+}
+```
+
+### Timestamps  
+```typescript
+interface User {
+  name: string
+  // createdAt: Date - added automatically
+  // updatedAt: Date - added automatically  
+}
+```
+
+### Foreign Keys
+```typescript
+interface Post {
+  title: string
+  userId: string  // References users.id
+  authorId: string // Can map to users.id via config
+}
+```
+
+### Uniqueness
+```typescript
+interface User {
+  /** @unique */
+  email: string
+  
+  // Or use naming convention
+  usernameUnique: string
+}
+```
+
+### Nullability
+```typescript
+interface User {
+  name: string    // NOT NULL
+  bio?: string    // NULL
+}
+```
+
+### Type Mapping
+```typescript
+interface Example {
+  text: string           // → TEXT
+  count: number          // → INTEGER  
+  active: boolean        // → BOOLEAN
+  created: Date          // → TIMESTAMP
+  tags: string[]         // → TEXT[] (Postgres) or JSON (SQLite)
+  metadata: Record<string, any>  // → JSONB (Postgres) or JSON (SQLite)
+}
+```
+
+## Database Support
+
+Works with both PostgreSQL and SQLite. Mist auto-detects from your connection string:
+
+```typescript
+// PostgreSQL
+export default {
+  connection: 'postgres://user:pass@localhost/db'
+}
+
+// SQLite
+export default {
+  connection: './dev.db'
+}
+```
+
+Same code, same interfaces, same conventions—works with both.
+
+## CLI Commands
+
+### Generate schemas
+```bash
+npx mist generate
+```
+
+### Development mode (watch + auto-migrate)
+```bash
+npx mist dev
+```
+
+### Run migrations
+```bash
+npx mist migrate --up
+```
+
+### Generate migration from changes
+```bash
+npx mist migrate --generate
+```
+
+## Configuration
+
+Customize conventions in `mist.config.ts`:
+
+```typescript
+export default {
+  models: 'src/models/**/*.ts',
+  output: '.mist',
+  connection: process.env.DATABASE_URL,
+  
+  conventions: {
+    timestamps: true,
+    primaryKey: 'id',
+    
+    // Custom foreign key mappings
+    foreignKeys: {
+      authorId: 'users',
+      createdById: 'users'
+    },
+    
+    // Unique constraints
+    unique: {
+      users: ['email', 'username']
+    }
+  }
+}
+```
+
+## API Reference
+
+### Insert
+```typescript
+const user = await db.users.insert({ 
+  name: 'Alice' 
+} as User)
+```
+
+### Find One
+```typescript
+const user = await db.users.findOne({ 
+  email: 'alice@example.com' 
+} as User)
+```
+
+### Find Many
+```typescript
+const users = await db.users.findMany({ 
+  age: 25 
+} as User)
+```
+
+### Update
+```typescript
+await db.users.update(
+  { id: user.id },
+  { name: 'Alicia' } as User
+)
+```
+
+### Delete
+```typescript
+await db.users.delete({ id: user.id })
+```
+
+## What Gets Generated
+
+Mist generates clean, readable Drizzle schemas in the `.mist` directory:
+
+```
+.mist/
+├── schema/
+│   ├── users.ts      # Drizzle table definition
+│   ├── posts.ts
+│   └── index.ts
+├── types/
+│   ├── users.ts      # TypeScript types
+│   └── index.ts  
+├── client.ts         # DB client
+└── migrations/       # SQL migrations
+```
+
+Generated files are **reviewable but not meant to be edited**. Think of them like `node_modules`—generated artifacts you can inspect but don't modify.
+
+## Escape Hatches
+
+When conventions aren't enough, use explicit Drizzle schemas:
+
+```typescript
+// models/user.drizzle.ts
+import { users } from '../.mist/schema'
+import { pgTable, index } from 'drizzle-orm/pg-core'
+
+export const usersCustom = pgTable('users', {
+  ...users,
+  // Add custom constraints, indexes, etc.
+}, (table) => ({
+  emailIdx: index('email_idx').on(table.email)
+}))
+```
+
+Or override specific fields:
+
+```typescript
+export default {
+  overrides: {
+    users: {
+      email: { unique: true, index: true }
+    }
+  }
+}
+```
+
+## Examples
+
+Check the [`examples/`](./examples) directory:
+
+- [`basic/`](./examples/basic) - Simple CRUD app
+- [`postgres/`](./examples/postgres) - PostgreSQL with relationships
+- [`sqlite/`](./examples/sqlite) - SQLite with migrations
+
+## Comparison
+
+### vs Writing Drizzle Directly
+- ✅ Less boilerplate (no schema files for simple tables)
+- ✅ Conventions reduce decisions
+- ⚠️ Less control (but escape hatches available)
+
+### vs Prisma
+- ✅ No DSL to learn (just TypeScript)
+- ✅ Lighter weight (builds on Drizzle)
+- ✅ No separate schema file
+- ⚠️ Less mature ecosystem
+
+### vs TypeORM
+- ✅ No decorators needed
+- ✅ Better TypeScript inference
+- ⚠️ Less features (by design)
+
+## Philosophy
+
+**Conventions over configuration.** Most apps have dozens of similar tables. Mist eliminates the repetitive parts while staying out of your way for complex cases.
+
+**TypeScript is the schema.** Your domain models are already defined as interfaces. Why rewrite them as schema definitions?
+
+**Drizzle underneath.** Mist generates standard Drizzle code. You can always drop down to Drizzle for advanced features, and generated code is readable.
+
+**Progressive disclosure.** Start simple (just interfaces), add configuration as needed, use explicit schemas for edge cases.
+
+## Roadmap
+
+- [x] Core schema generation
+- [x] PostgreSQL and SQLite support
+- [x] Basic CRUD operations
+- [x] Migration generation
+- [ ] Relationship loading (`include`)
+- [ ] Advanced query filters
+- [ ] Index support via JSDoc
+- [ ] Zod schema generation
+- [ ] MySQL support
+- [ ] Plugin system
+
+## Contributing
+
+Contributions welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## FAQ
+
+**Q: Is this production-ready?**  
+A: Not yet. Mist is in early development. Use for side projects and provide feedback.
+
+**Q: Can I mix Mist conventions with explicit Drizzle schemas?**  
+A: Yes! Use Mist for simple tables, Drizzle for complex ones.
+
+**Q: What about performance?**  
+A: Mist generates standard Drizzle code, so performance is identical to hand-written Drizzle.
+
+**Q: Does this work with existing databases?**  
+A: Not yet. Currently Mist is for new projects. Database introspection is planned.
+
+**Q: Can I use this with [framework]?**  
+A: Yes! Mist is framework-agnostic. Works with Next.js, Express, Fastify, etc.
+
+**Q: How do I handle migrations in production?**  
+A: Use `mist migrate --generate` to create migrations, review them, then run `mist migrate --up` in production. Never use auto-migrate in production.
+
+## License
+
+MIT © [Your Name]
+
+## Acknowledgments
+
+Built on top of the excellent [Drizzle ORM](https://orm.drizzle.team/). Inspired by the simplicity of NoSQL libraries and the conventions of Rails/Django ORMs.
+
+---
+
+**Questions?** [Open an issue](https://github.com/yourusername/mist/issues)  
+**Ideas?** [Start a discussion](https://github.com/yourusername/mist/discussions)
