@@ -5,8 +5,7 @@
 export interface MistConfig {
   /**
    * Glob pattern(s) for finding model files
-   * @example './models/**/*.ts'
-   * @example ['./src/models/**/*.ts', './src/entities/**/*.ts']
+   * @example './models/star-star-slash-star.ts' (use ** for recursive)
    */
   models: string | string[]
 

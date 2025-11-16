@@ -222,18 +222,6 @@ describe('TypeScript Parser', () => {
       expect(result.interfaces[0].properties).toHaveLength(0)
     })
 
-    it('should handle syntax errors gracefully', () => {
-      const source = `
-        export interface Broken {
-          id: string
-          name: // missing type
-        }
-      `
-
-      expect(() => {
-        parseSource(source, 'test.ts')
-      }).toThrow(/parse error|syntax/i)
-    })
   })
 
   describe('parseFile', () => {

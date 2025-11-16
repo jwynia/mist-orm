@@ -111,9 +111,6 @@ export function generatePostgresSchema(analyzed: AnalyzedInterface): GeneratedSc
 
   const { interface: iface, tableName, primaryKey, foreignKeys, uniqueFields, timestamps } = analyzed
 
-  // Track which fields are foreign keys
-  const fkFields = new Set(foreignKeys.map(fk => fk.field))
-
   // Generate columns for each property
   for (const prop of iface.properties) {
     const isPrimaryKey = primaryKey && prop.name === primaryKey.field

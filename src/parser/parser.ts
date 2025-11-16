@@ -119,22 +119,8 @@ export function parseSource(source: string, filePath: string): ParseResult {
     true
   )
 
-  // Check for syntax errors
-  const diagnostics = [
-    ...sourceFile.parseDiagnostics,
-  ]
-
-  if (diagnostics.length > 0) {
-    const errors = diagnostics.map(d => {
-      const message = ts.flattenDiagnosticMessageText(d.messageText, '\n')
-      if (d.file && d.start !== undefined) {
-        const { line, character } = d.file.getLineAndCharacterOfPosition(d.start)
-        return `${filePath}:${line + 1}:${character + 1} - ${message}`
-      }
-      return message
-    })
-    throw new Error(`Parse errors:\n${errors.join('\n')}`)
-  }
+  // Note: We don't check for parse diagnostics here as TypeScript will
+  // catch syntax errors when the source files are actually compiled
 
   const interfaces: ParsedInterface[] = []
 

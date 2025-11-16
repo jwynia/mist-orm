@@ -11,7 +11,7 @@ import type { GeneratedSchema } from './postgres'
  */
 export interface FileSystem {
   mkdir(path: string, options?: { recursive?: boolean }): Promise<void>
-  writeFile(path: string, data: string, encoding: string): Promise<void>
+  writeFile(path: string, data: string, encoding: BufferEncoding): Promise<void>
   exists(path: string): Promise<boolean>
 }
 

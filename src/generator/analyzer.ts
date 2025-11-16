@@ -2,7 +2,7 @@
  * Convention detection and interface analysis
  */
 
-import type { ParsedInterface, ParsedProperty } from '../parser/types'
+import type { ParsedInterface } from '../parser/types'
 import type { ResolvedMistConfig } from '../config/types'
 
 export interface PrimaryKeyInfo {
