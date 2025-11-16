@@ -1,0 +1,76 @@
+{
+  "name": "mist-orm",
+  "version": "0.0.1",
+  "description": "Convention-based data layer for TypeScript. Auto-generate Drizzle ORM schemas from TypeScript interfaces.",
+  "keywords": [
+    "typescript",
+    "orm",
+    "drizzle",
+    "database",
+    "schema",
+    "postgres",
+    "sqlite",
+    "conventions",
+    "code-generation"
+  ],
+  "license": "Apache-2.0",
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jwynia/mist-orm.git"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "mist": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "drizzle-orm": "^0.33.0"
+  },
+  "peerDependenciesMeta": {
+    "postgres": {
+      "optional": true
+    },
+    "better-sqlite3": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "chokidar": "^4.0.0",
+    "commander": "^12.1.0",
+    "ora": "^8.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.6",
+    "@typescript-eslint/eslint-plugin": "^8.11.0",
+    "@typescript-eslint/parser": "^8.11.0",
+    "better-sqlite3": "^11.5.0",
+    "drizzle-orm": "^0.33.0",
+    "eslint": "^9.13.0",
+    "postgres": "^3.4.4",
+    "prettier": "^3.3.3",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

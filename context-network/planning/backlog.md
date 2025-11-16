@@ -27,92 +27,96 @@ This backlog breaks down the high-level roadmap (see `roadmap.md`) into concrete
 ## Phase 0: Project Setup
 
 ### 0.1 Repository and Package Initialization
-**Status:** Not Started
+**Status:** Completed
 **Priority:** High
 **Effort:** 2-4 hours
+**Completed:** 2025-11-16
 
 **Tasks:**
-- [ ] Initialize git repository
-- [ ] Create package.json with correct metadata
-  - Name: "mist" (or "mist-orm" if available)
+- [x] Initialize git repository
+- [x] Create package.json with correct metadata
+  - Name: "mist-orm" (chosen)
   - Version: 0.0.1
   - License: Apache-2.0
   - Repository URL
   - Keywords for discoverability
-- [ ] Set up TypeScript configuration (tsconfig.json)
+- [x] Set up TypeScript configuration (tsconfig.json)
   - Strict mode enabled
-  - Target: ES2020 or later
+  - Target: ES2022
   - Module: ESNext
   - Declaration files enabled
-- [ ] Create directory structure
+- [x] Create directory structure
   - `src/` for source code
   - `dist/` for compiled output
   - `tests/` for test files
   - `examples/` for example projects
   - `.mist/` for generated files (gitignored)
-- [ ] Set up .gitignore
+- [x] Set up .gitignore
   - node_modules
   - dist
   - .mist
   - *.log
   - coverage
-- [ ] Create initial README.md with project vision
+- [x] Create initial README.md with project vision (reflects current state, not aspirational)
 
 **Acceptance Criteria:**
-- Package can be built with `npm run build`
-- TypeScript compiles without errors
-- Git repository is initialized and has initial commit
+- ✅ Package can be built with `npm run build`
+- ✅ TypeScript compiles without errors
+- ✅ Git repository is initialized and has initial commit
 
 ### 0.2 Development Tooling
-**Status:** Not Started
+**Status:** Completed
 **Priority:** High
 **Effort:** 2-3 hours
+**Completed:** 2025-11-16
 
 **Tasks:**
-- [ ] Install and configure build tool (tsup recommended)
+- [x] Install and configure build tool (tsup)
   - Entry points: src/index.ts, src/cli.ts
   - Output formats: ESM and CJS
   - Declaration files generated
-- [ ] Set up testing framework (vitest)
+- [x] Set up testing framework (vitest)
   - Basic test configuration
   - Test script in package.json
-  - Coverage reporting
-- [ ] Install and configure linting (ESLint + Prettier)
+  - Coverage reporting configured
+- [x] Install and configure linting (ESLint + Prettier)
   - TypeScript ESLint parser
   - Recommended rules
-  - Format on save configuration
-- [ ] Set up npm scripts
+  - Node.js globals configured
+- [x] Set up npm scripts
   - `build`: Compile TypeScript
   - `test`: Run tests
   - `dev`: Watch mode for development
   - `lint`: Run linter
   - `format`: Format code
-- [ ] Create LICENSE file (Apache 2.0)
+  - `typecheck`: Type checking
+- [x] Create LICENSE file (Apache 2.0)
 
 **Acceptance Criteria:**
-- `npm test` runs successfully (even with no tests)
-- `npm run build` produces dist/ output
-- Linting and formatting work correctly
+- ✅ `npm test` runs successfully (no tests yet, expected)
+- ✅ `npm run build` produces dist/ output
+- ✅ Linting and formatting work correctly
 
 ### 0.3 Core Dependencies Installation
-**Status:** Not Started
+**Status:** Completed
 **Priority:** High
 **Effort:** 1 hour
+**Completed:** 2025-11-16
 
 **Tasks:**
-- [ ] Install core dependencies
+- [x] Install core dependencies
   - `typescript` (dev)
   - `drizzle-orm` (peer dependency)
   - Add to package.json with correct versions
-- [ ] Install CLI dependencies
+- [x] Install CLI dependencies
   - `commander` - CLI framework
   - `chokidar` - File watching
   - `chalk` - Terminal colors
   - `ora` - Progress spinners
-- [ ] Install database drivers (as optional peer dependencies)
-  - `postgres` or `pg` - PostgreSQL
+- [x] Install database drivers (as optional peer dependencies)
+  - `postgres` - PostgreSQL
   - `better-sqlite3` - SQLite
-- [ ] Install dev dependencies
+- [x] Install dev dependencies
   - `@types/node`
   - `tsup` - Build tool
   - `tsx` - TypeScript execution
@@ -120,9 +124,9 @@ This backlog breaks down the high-level roadmap (see `roadmap.md`) into concrete
   - `eslint`, `prettier`, etc.
 
 **Acceptance Criteria:**
-- All dependencies install without errors
-- package.json has correct dependency declarations
-- No security vulnerabilities reported
+- ✅ All dependencies install without errors
+- ✅ package.json has correct dependency declarations
+- ⚠️ 5 moderate security vulnerabilities reported (to be addressed in future updates)
 
 ---
 

@@ -13,7 +13,9 @@ This document defines the core purpose, goals, and scope of the mist-orm project
 
 ### Project Overview
 
-**Project Name:** mist-orm (distributed as npm package "mist")
+**Project Name:** mist-orm
+
+**NPM Package:** `mist-orm` (CLI command: `mist`)
 
 **Tagline:** Auto-generate Drizzle ORM schemas from TypeScript interfaces with zero boilerplate
 

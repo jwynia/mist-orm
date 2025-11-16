@@ -1,404 +1,168 @@
-# Mist
+# mist-orm
 
-> Convention-based data layer for TypeScript. Write interfaces, get a database.
+> Convention-based data layer for TypeScript. Auto-generate Drizzle ORM schemas from TypeScript interfaces.
 
-[![npm version](https://badge.fury.io/js/mist.svg)](https://www.npmjs.com/package/mist)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Mist auto-generates [Drizzle ORM](https://orm.drizzle.team/) schemas from your TypeScript interfaces using sensible conventions. No schema files, no boilerplate—just clean domain models and a fully-functional database.
+## Status: Early Development (Phase 0)
+
+**This project is currently in Phase 0 (initial setup).** The package infrastructure is in place, but core functionality has not been implemented yet.
+
+### Current State
+- ✅ **Phase 0 Complete:** Project setup, build tooling, testing infrastructure
+- 🚧 **Phase 1 Next:** Core schema generation (in planning)
+- ⏳ **MVP Target:** Phases 1-3 will deliver usable functionality
+
+**Not yet functional for use.** This README will be updated as features are implemented.
+
+## Vision
+
+Mist will eliminate database schema boilerplate by generating Drizzle ORM schemas from plain TypeScript interfaces using sensible conventions. The goal is to let developers write clean domain models and get a fully-functional, type-safe data layer without manual schema definitions.
+
+### Planned Core Concept
 
 ```typescript
-// Write this
+// Write this (planned)
 export interface User {
   name: string
   email: string
 }
 
-// Get this (automatically)
+// Get this automatically (planned)
 // - Database table with id, createdAt, updatedAt
-// - Type-safe CRUD operations  
+// - Type-safe CRUD operations
 // - Migrations
 // - Works with Postgres or SQLite
 ```
 
-## Why Mist?
+## Planned Development Phases
 
-**Stop writing schema definitions.** If you're building a typical CRUD app where most tables follow standard patterns (id, timestamps, simple relationships), you're rewriting the same schema boilerplate over and over.
+### Phase 0: Project Setup ✅ (Current)
+- [x] Package initialization and configuration
+- [x] Build tooling (tsup, TypeScript)
+- [x] Testing framework (vitest)
+- [x] Linting and formatting (ESLint, Prettier)
+- [x] Apache 2.0 license
 
-**Mist applies conventions:**
-- Every table gets `id`, `createdAt`, `updatedAt`
-- `userId` automatically references `users.id`
+### Phase 1: Core Schema Generation (Next)
+- [ ] TypeScript AST parser for interfaces
+- [ ] Convention detection (primary keys, timestamps, foreign keys)
+- [ ] Type mapping (TypeScript → SQL)
+- [ ] Drizzle schema code generation (PostgreSQL & SQLite)
+- [ ] File writing system
+
+### Phase 2: Runtime Client
+- [ ] Database connection management
+- [ ] CRUD operations (insert, findOne, findMany, update, delete)
+- [ ] Generated typed client
+
+### Phase 3: CLI & Watch Mode
+- [ ] CLI framework with commands
+- [ ] `mist generate` command
+- [ ] `mist dev` watch mode
+- [ ] Configuration file support
+
+### Phases 4-5: Migrations & Advanced Features
+See [context-network/planning/roadmap.md](context-network/planning/roadmap.md) for detailed roadmap.
+
+## Planned Features
+
+Once implemented, mist-orm will:
+
+- **Auto-generate schemas** from TypeScript interfaces
+- **Apply conventions** for common patterns (IDs, timestamps, foreign keys)
+- **Support PostgreSQL and SQLite** with the same code
+- **Provide type-safe CRUD** operations
+- **Generate migrations** for schema changes
+- **Offer escape hatches** for complex cases
+
+## Why mist-orm?
+
+Most CRUD applications follow similar patterns:
+- Tables have IDs and timestamps
+- `userId` references `users.id`
 - TypeScript types map to SQL types
-- Interfaces define your schema
 
-**For complex cases,** drop down to explicit Drizzle schemas. Mist is a layer on top, not a replacement.
+**Stop rewriting the same schema boilerplate.** Mist will apply these conventions automatically while maintaining full type safety through Drizzle ORM.
 
-## Quick Start
+## Development Setup
 
-Install:
-
-```bash
-npm install mist
-```
-
-Create a config file:
-
-```typescript
-// mist.config.ts
-export default {
-  models: 'src/models/**/*.ts',
-  output: '.mist',
-  connection: process.env.DATABASE_URL || './dev.db'
-}
-```
-
-Define your models:
-
-```typescript
-// src/models/user.ts
-export interface User {
-  name: string
-  /** @unique */
-  email: string
-  age?: number
-}
-
-// src/models/post.ts  
-export interface Post {
-  title: string
-  content: string
-  userId: string  // Auto-detected foreign key
-  published: boolean
-}
-```
-
-Generate and use:
+If you want to contribute or follow development:
 
 ```bash
-# Generate schemas
-npx mist generate
+# Clone the repository
+git clone https://github.com/jwynia/mist-orm.git
+cd mist-orm
 
-# Or run in watch mode
-npx mist dev
+# Install dependencies
+npm install
+
+# Run build (currently builds empty stubs)
+npm run build
+
+# Run tests (currently none)
+npm test
+
+# Type checking
+npm run typecheck
+
+# Linting
+npm run lint
 ```
 
-```typescript
-// Use in your app
-import { db } from 'mist'
-import type { User, Post } from './models'
-
-const user = await db.users.insert({
-  name: 'Alice',
-  email: 'alice@example.com'
-} as User)
-
-const post = await db.posts.insert({
-  title: 'Hello World',
-  content: 'My first post',
-  userId: user.id,
-  published: true
-} as Post)
-
-const posts = await db.posts.findMany({ 
-  userId: user.id 
-} as Post)
-```
-
-## Conventions
-
-Mist follows simple, predictable conventions:
-
-### Primary Keys
-```typescript
-interface User {
-  // id: string is added automatically (UUID)
-  name: string
-}
-```
-
-### Timestamps  
-```typescript
-interface User {
-  name: string
-  // createdAt: Date - added automatically
-  // updatedAt: Date - added automatically  
-}
-```
-
-### Foreign Keys
-```typescript
-interface Post {
-  title: string
-  userId: string  // References users.id
-  authorId: string // Can map to users.id via config
-}
-```
-
-### Uniqueness
-```typescript
-interface User {
-  /** @unique */
-  email: string
-  
-  // Or use naming convention
-  usernameUnique: string
-}
-```
-
-### Nullability
-```typescript
-interface User {
-  name: string    // NOT NULL
-  bio?: string    // NULL
-}
-```
-
-### Type Mapping
-```typescript
-interface Example {
-  text: string           // → TEXT
-  count: number          // → INTEGER  
-  active: boolean        // → BOOLEAN
-  created: Date          // → TIMESTAMP
-  tags: string[]         // → TEXT[] (Postgres) or JSON (SQLite)
-  metadata: Record<string, any>  // → JSONB (Postgres) or JSON (SQLite)
-}
-```
-
-## Database Support
-
-Works with both PostgreSQL and SQLite. Mist auto-detects from your connection string:
-
-```typescript
-// PostgreSQL
-export default {
-  connection: 'postgres://user:pass@localhost/db'
-}
-
-// SQLite
-export default {
-  connection: './dev.db'
-}
-```
-
-Same code, same interfaces, same conventions—works with both.
-
-## CLI Commands
-
-### Generate schemas
-```bash
-npx mist generate
-```
-
-### Development mode (watch + auto-migrate)
-```bash
-npx mist dev
-```
-
-### Run migrations
-```bash
-npx mist migrate --up
-```
-
-### Generate migration from changes
-```bash
-npx mist migrate --generate
-```
-
-## Configuration
-
-Customize conventions in `mist.config.ts`:
-
-```typescript
-export default {
-  models: 'src/models/**/*.ts',
-  output: '.mist',
-  connection: process.env.DATABASE_URL,
-  
-  conventions: {
-    timestamps: true,
-    primaryKey: 'id',
-    
-    // Custom foreign key mappings
-    foreignKeys: {
-      authorId: 'users',
-      createdById: 'users'
-    },
-    
-    // Unique constraints
-    unique: {
-      users: ['email', 'username']
-    }
-  }
-}
-```
-
-## API Reference
-
-### Insert
-```typescript
-const user = await db.users.insert({ 
-  name: 'Alice' 
-} as User)
-```
-
-### Find One
-```typescript
-const user = await db.users.findOne({ 
-  email: 'alice@example.com' 
-} as User)
-```
-
-### Find Many
-```typescript
-const users = await db.users.findMany({ 
-  age: 25 
-} as User)
-```
-
-### Update
-```typescript
-await db.users.update(
-  { id: user.id },
-  { name: 'Alicia' } as User
-)
-```
-
-### Delete
-```typescript
-await db.users.delete({ id: user.id })
-```
-
-## What Gets Generated
-
-Mist generates clean, readable Drizzle schemas in the `.mist` directory:
+## Project Structure
 
 ```
-.mist/
-├── schema/
-│   ├── users.ts      # Drizzle table definition
-│   ├── posts.ts
-│   └── index.ts
-├── types/
-│   ├── users.ts      # TypeScript types
-│   └── index.ts  
-├── client.ts         # DB client
-└── migrations/       # SQL migrations
+mist-orm/
+├── src/              # Source code (to be implemented)
+├── tests/            # Test files (to be added)
+├── examples/         # Example projects (to be added)
+├── context-network/  # Planning and design documentation
+├── package.json      # Package configuration
+├── tsconfig.json     # TypeScript configuration
+└── README.md         # This file
 ```
 
-Generated files are **reviewable but not meant to be edited**. Think of them like `node_modules`—generated artifacts you can inspect but don't modify.
+## Documentation
 
-## Escape Hatches
+Detailed planning and architecture documentation is maintained in the [context-network](context-network/) directory:
 
-When conventions aren't enough, use explicit Drizzle schemas:
-
-```typescript
-// models/user.drizzle.ts
-import { users } from '../.mist/schema'
-import { pgTable, index } from 'drizzle-orm/pg-core'
-
-export const usersCustom = pgTable('users', {
-  ...users,
-  // Add custom constraints, indexes, etc.
-}, (table) => ({
-  emailIdx: index('email_idx').on(table.email)
-}))
-```
-
-Or override specific fields:
-
-```typescript
-export default {
-  overrides: {
-    users: {
-      email: { unique: true, index: true }
-    }
-  }
-}
-```
-
-## Examples
-
-Check the [`examples/`](./examples) directory:
-
-- [`basic/`](./examples/basic) - Simple CRUD app
-- [`postgres/`](./examples/postgres) - PostgreSQL with relationships
-- [`sqlite/`](./examples/sqlite) - SQLite with migrations
-
-## Comparison
-
-### vs Writing Drizzle Directly
-- ✅ Less boilerplate (no schema files for simple tables)
-- ✅ Conventions reduce decisions
-- ⚠️ Less control (but escape hatches available)
-
-### vs Prisma
-- ✅ No DSL to learn (just TypeScript)
-- ✅ Lighter weight (builds on Drizzle)
-- ✅ No separate schema file
-- ⚠️ Less mature ecosystem
-
-### vs TypeORM
-- ✅ No decorators needed
-- ✅ Better TypeScript inference
-- ⚠️ Less features (by design)
+- [Project Definition](context-network/foundation/project_definition.md)
+- [Development Roadmap](context-network/planning/roadmap.md)
+- [Task Backlog](context-network/planning/backlog.md)
 
 ## Philosophy
 
-**Conventions over configuration.** Most apps have dozens of similar tables. Mist eliminates the repetitive parts while staying out of your way for complex cases.
+When implemented, mist-orm will follow these principles:
 
-**TypeScript is the schema.** Your domain models are already defined as interfaces. Why rewrite them as schema definitions?
+- **Interfaces are the source of truth** - Domain models define the database
+- **Conventions over configuration** - Sensible defaults eliminate boilerplate
+- **Zero-config for common cases** - Works out of the box for typical patterns
+- **Escape hatches available** - Drop down to Drizzle for complex scenarios
+- **TypeScript-first** - Type safety throughout
 
-**Drizzle underneath.** Mist generates standard Drizzle code. You can always drop down to Drizzle for advanced features, and generated code is readable.
+## Built On
 
-**Progressive disclosure.** Start simple (just interfaces), add configuration as needed, use explicit schemas for edge cases.
-
-## Roadmap
-
-- [x] Core schema generation
-- [x] PostgreSQL and SQLite support
-- [x] Basic CRUD operations
-- [x] Migration generation
-- [ ] Relationship loading (`include`)
-- [ ] Advanced query filters
-- [ ] Index support via JSDoc
-- [ ] Zod schema generation
-- [ ] MySQL support
-- [ ] Plugin system
-
-## Contributing
-
-Contributions welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md).
-
-## FAQ
-
-**Q: Is this production-ready?**  
-A: Not yet. Mist is in early development. Use for side projects and provide feedback.
-
-**Q: Can I mix Mist conventions with explicit Drizzle schemas?**  
-A: Yes! Use Mist for simple tables, Drizzle for complex ones.
-
-**Q: What about performance?**  
-A: Mist generates standard Drizzle code, so performance is identical to hand-written Drizzle.
-
-**Q: Does this work with existing databases?**  
-A: Not yet. Currently Mist is for new projects. Database introspection is planned.
-
-**Q: Can I use this with [framework]?**  
-A: Yes! Mist is framework-agnostic. Works with Next.js, Express, Fastify, etc.
-
-**Q: How do I handle migrations in production?**  
-A: Use `mist migrate --generate` to create migrations, review them, then run `mist migrate --up` in production. Never use auto-migrate in production.
+- [TypeScript](https://www.typescriptlang.org/) - Language and type system
+- [Drizzle ORM](https://orm.drizzle.team/) - Underlying ORM layer
+- [tsup](https://tsup.egoist.dev/) - Build tool
+- [Vitest](https://vitest.dev/) - Testing framework
 
 ## License
 
-MIT © [Your Name]
+Apache-2.0 © 2025 mist-orm contributors
 
-## Acknowledgments
+See [LICENSE](LICENSE) file for details.
 
-Built on top of the excellent [Drizzle ORM](https://orm.drizzle.team/). Inspired by the simplicity of NoSQL libraries and the conventions of Rails/Django ORMs.
+## Contributing
+
+This project is in early development. Once Phase 1 is underway, contribution guidelines will be established.
+
+For now, you can:
+- Watch the repository for updates
+- Review planning documents in the context-network
+- Open discussions about the planned approach
 
 ---
 
-**Questions?** [Open an issue](https://github.com/yourusername/mist/issues)  
-**Ideas?** [Start a discussion](https://github.com/yourusername/mist/discussions)
+**Note:** This README reflects the current state of the project. It will be updated as each phase is completed to document actual functionality rather than plans.
