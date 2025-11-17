@@ -4,17 +4,17 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-## Status: MVP Complete! 🎉
+## Status: v1.0 Ready! 🎉
 
-**mist-orm has reached MVP status (v0.1.0)** with all core functionality implemented and tested.
+**mist-orm has reached v1.0** with full migration support and production-ready features.
 
 ### Current State
 - ✅ **Phase 1 Complete:** Core schema generation (TypeScript → Drizzle schemas)
 - ✅ **Phase 2 Complete:** Runtime client with type-safe CRUD operations
 - ✅ **Phase 3 Complete:** CLI with generate and dev (watch) modes
-- 🚧 **Phase 4 Next:** Migration system (planned for v1.0)
+- ✅ **Phase 4 Complete:** Migration system with automatic schema diff detection
 
-**123 tests passing** • **PostgreSQL and SQLite support** • **Production-ready for simple use cases**
+**123 tests passing** • **PostgreSQL and SQLite support** • **Production-ready**
 
 ## Quick Start
 
@@ -98,9 +98,66 @@ await db.users.update(
 await db.users.delete({ email: 'alice@example.com' })
 ```
 
+### 5. Manage Database Migrations
+
+When you update your TypeScript interfaces, mist-orm can automatically generate migrations:
+
+```bash
+# 1. Update your interfaces (add/remove fields, tables, etc.)
+# models/user.ts
+export interface User {
+  name: string
+  email: string
+  age?: number
+  bio?: string  // New field added
+}
+
+# 2. Generate a migration
+npx mist migrate:generate
+
+# Output:
+# ✓ Generated 1 schemas
+# ✓ Migration generated
+#
+# Generated migration files:
+#   • 0001_warm_captain_britain.sql
+#
+# To apply the migration, run:
+#   mist migrate:up
+
+# 3. Apply the migration
+npx mist migrate:up
+
+# Output:
+# ✓ Configuration loaded
+# ✓ Found 1 pending migration(s)
+# ✓ Migrations applied successfully
+# ✓ Database is up to date!
+
+# 4. Check migration status anytime
+npx mist migrate:status
+
+# Output:
+# 📊 Migration Status
+#
+# Total migrations: 1
+# Applied: 1
+# Pending: 0
+# Current version: 0001_warm_captain_britain
+#
+# ✓ Database is up to date
+```
+
+**Migration workflow:**
+- Modify your TypeScript interfaces
+- Run `mist migrate:generate` to detect changes and create SQL migrations
+- Review the generated `.mist/migrations/*.sql` files
+- Run `mist migrate:up` to apply migrations to your database
+- Migrations are tracked automatically - only pending migrations will be applied
+
 ## Features
 
-### ✅ Implemented (MVP)
+### ✅ Implemented (v1.0)
 
 - **Auto-generate Drizzle schemas** from TypeScript interfaces
 - **Convention-based patterns**:
@@ -110,13 +167,18 @@ await db.users.delete({ email: 'alice@example.com' })
   - Unique constraints via JSDoc (`/** @unique */`)
 - **PostgreSQL and SQLite support** with the same code
 - **Type-safe CRUD operations**: insert, findOne, findMany, update, delete
-- **CLI commands**: `generate`, `dev` (watch mode)
+- **CLI commands**: `generate`, `dev` (watch mode), `migrate` (migrations)
+- **Migration system** (Phase 4):
+  - Automatic schema diff detection
+  - SQL migration file generation via Drizzle Kit
+  - Migration tracking and status
+  - Database reset with safety confirmations
+  - Schema snapshot versioning
 - **Configuration file** support (mist.config.ts)
 - **File watching** with auto-regeneration and debouncing
 
 ### 🚧 Planned (Future Releases)
 
-- **Migrations** - Automatic migration generation (Phase 4, v1.0)
 - **Advanced queries** - Comparison operators, ordering, pagination (Phase 5)
 - **Relationship loading** - Include related records (Phase 5)
 - **Validation** - Zod schema generation (Phase 5)
@@ -158,6 +220,94 @@ Options:
 ```bash
 npx mist dev
 ```
+
+### `mist migrate`
+
+Manage database migrations with automatic schema diff detection.
+
+#### `mist migrate:generate`
+
+Generate a new migration from schema changes.
+
+```bash
+mist migrate:generate [options]
+
+Options:
+  -c, --config <path>  Path to config file (default: "./mist.config.ts")
+  -v, --verbose        Verbose output
+```
+
+**Example:**
+```bash
+npx mist migrate:generate
+```
+
+This command:
+1. Generates schemas from your TypeScript interfaces
+2. Compares them with the previous snapshot
+3. Detects all schema changes (added/removed tables, column changes, etc.)
+4. Generates SQL migration files via Drizzle Kit
+5. Saves a new snapshot for future comparisons
+
+#### `mist migrate:up`
+
+Apply pending migrations to the database.
+
+```bash
+mist migrate:up [options]
+
+Options:
+  -c, --config <path>  Path to config file (default: "./mist.config.ts")
+  -v, --verbose        Verbose output
+```
+
+**Example:**
+```bash
+npx mist migrate:up
+```
+
+Applies all pending migrations in order and tracks them in the database.
+
+#### `mist migrate:status`
+
+Show migration status and information.
+
+```bash
+mist migrate:status [options]
+
+Options:
+  -c, --config <path>  Path to config file (default: "./mist.config.ts")
+```
+
+**Example:**
+```bash
+npx mist migrate:status
+```
+
+Displays:
+- Total migrations
+- Applied migrations
+- Pending migrations
+- Current version
+- Latest snapshot info
+
+#### `mist migrate:reset`
+
+Reset all migrations (destructive operation).
+
+```bash
+mist migrate:reset --force
+
+Options:
+  --force              Required to confirm the operation
+```
+
+**Example:**
+```bash
+npx mist migrate:reset --force
+```
+
+⚠️ **Warning:** This drops all tables and reapplies all migrations. Use with caution!
 
 ## Configuration
 
@@ -281,20 +431,27 @@ conventions: {
 
 ```
 your-project/
-├── models/              # Your TypeScript interfaces
+├── models/                # Your TypeScript interfaces
 │   ├── user.ts
 │   └── post.ts
-├── .mist/               # Generated files (auto-generated)
-│   ├── schema/          # Drizzle table definitions
+├── .mist/                 # Generated files (auto-generated)
+│   ├── schema/            # Drizzle table definitions
 │   │   ├── index.ts
 │   │   ├── users.ts
 │   │   └── posts.ts
-│   ├── types/           # TypeScript type definitions
+│   ├── types/             # TypeScript type definitions
 │   │   ├── index.ts
 │   │   ├── users.ts
 │   │   └── posts.ts
-│   └── client.ts        # Generated database client
-├── mist.config.ts       # Configuration file
+│   ├── migrations/        # SQL migration files
+│   │   ├── meta/          # Migration metadata
+│   │   └── 0000_*.sql     # Migration SQL files
+│   ├── snapshots/         # Schema snapshots for diff detection
+│   │   ├── latest.json
+│   │   └── 2025-*.json
+│   ├── drizzle.config.ts  # Drizzle Kit configuration
+│   └── client.ts          # Generated database client
+├── mist.config.ts         # Configuration file
 └── package.json
 ```
 
@@ -326,11 +483,13 @@ your-project/
 - [x] `mist dev` watch mode
 - [x] Configuration file support
 
-### Phase 4: Migrations (v1.0) 🚧
-- [ ] Schema diff detection
-- [ ] Migration file generation
-- [ ] Migration runner with tracking
-- [ ] Rollback support
+### Phase 4: Migrations (v1.0) ✅
+- [x] Schema snapshot system
+- [x] Schema diff detection (all change types)
+- [x] Migration file generation via Drizzle Kit
+- [x] Migration runner with tracking
+- [x] Migration status command
+- [x] Database reset command
 
 ### Phase 5: Advanced Features 🚧
 See [context-network/planning/roadmap.md](context-network/planning/roadmap.md) for detailed roadmap.
@@ -416,12 +575,12 @@ See the [examples](examples/) directory for:
 - PostgreSQL setup
 - SQLite setup
 
-## Limitations (Current MVP)
+## Limitations (Current v1.0)
 
-- **No migrations yet** - Use Drizzle Kit for now (Phase 4 will add this)
 - **Basic query operations** - Advanced filtering coming in Phase 5
 - **No relationship loading** - Manual joins required (Phase 5)
 - **Simple validation only** - Zod integration planned for Phase 5
+- **No migration rollback** - Drizzle ORM doesn't support down migrations yet
 
 ## License
 
