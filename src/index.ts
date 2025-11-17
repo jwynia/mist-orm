@@ -20,3 +20,7 @@ export { generateSqliteSchema } from './generator/sqlite'
 export * from './generator/writer'
 export { generate, type GenerateOptions, type GenerateResult } from './generator'
 export type { GeneratedSchema } from './generator/postgres' // Re-export once to avoid duplicate
+
+// Runtime (for generated client code)
+export * from './runtime/connection'
+export * from './runtime/operations'

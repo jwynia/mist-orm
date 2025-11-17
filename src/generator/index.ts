@@ -111,7 +111,7 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
 
   // Step 5: Write output files
   onProgress?.(`Writing schemas to ${config.output}...`)
-  const warnings = await writeSchemas(schemas, config.output, fs)
+  const warnings = await writeSchemas(schemas, config.output, config.database.type, fs)
 
   const tableNames = schemas.map(s => s.tableName)
   onProgress?.(`Done! Generated schemas for: ${tableNames.join(', ')}`)
