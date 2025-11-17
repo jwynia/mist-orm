@@ -149,7 +149,7 @@ describe('File Writer', () => {
       },
     ]
 
-    await expect(writeSchemas(schemas, './.mist', mockFs)).rejects.toThrow('Permission denied')
+    await expect(writeSchemas(schemas, './.mist', 'postgres', mockFs)).rejects.toThrow('Permission denied')
   })
 
   it('should create directory structure', async () => {
