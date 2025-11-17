@@ -5,10 +5,11 @@
 import { glob } from 'glob'
 import type { ResolvedMistConfig } from '../config/types'
 import { parseFile } from '../parser/parser'
-import { analyzeInterface } from './analyzer'
+import { analyzeInterface, type AnalyzedInterface } from './analyzer'
 import { generatePostgresSchema } from './postgres'
 import { generateSqliteSchema } from './sqlite'
 import { writeSchemas, type FileSystem, defaultFileSystem } from './writer'
+import { createSnapshot, saveSnapshot } from '../migrations/snapshot'
 
 export interface GenerateOptions {
   /**
@@ -25,6 +26,11 @@ export interface GenerateOptions {
    * Progress callback
    */
   onProgress?: (message: string) => void
+
+  /**
+   * Whether to save a snapshot of the generated schemas
+   */
+  saveSnapshot?: boolean
 }
 
 export interface GenerateResult {
@@ -52,13 +58,18 @@ export interface GenerateResult {
    * Warnings about circular dependencies or missing references
    */
   warnings: string[]
+
+  /**
+   * Analyzed interfaces (for migration generation)
+   */
+  analyzedInterfaces: AnalyzedInterface[]
 }
 
 /**
  * Main schema generation pipeline
  */
 export async function generate(options: GenerateOptions): Promise<GenerateResult> {
-  const { config, fs = defaultFileSystem, onProgress } = options
+  const { config, fs = defaultFileSystem, onProgress, saveSnapshot: shouldSaveSnapshot = false } = options
 
   // Step 1: Discover model files
   onProgress?.('Discovering model files...')
@@ -113,6 +124,13 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
   onProgress?.(`Writing schemas to ${config.output}...`)
   const warnings = await writeSchemas(schemas, config.output, config.database.type, fs)
 
+  // Step 6: Save snapshot if requested
+  if (shouldSaveSnapshot) {
+    onProgress?.('Saving schema snapshot...')
+    const snapshot = createSnapshot(analyzedInterfaces, config.database.type)
+    await saveSnapshot(snapshot, config.output)
+  }
+
   const tableNames = schemas.map(s => s.tableName)
   onProgress?.(`Done! Generated schemas for: ${tableNames.join(', ')}`)
 
@@ -129,5 +147,6 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
     tableNames,
     outputDir: config.output,
     warnings,
+    analyzedInterfaces,
   }
 }

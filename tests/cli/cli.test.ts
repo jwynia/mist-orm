@@ -88,13 +88,15 @@ describe('CLI', () => {
   })
 
   describe('migrate command', () => {
-    it('should show "coming soon" message', async () => {
-      const result = await runCLI(['migrate'])
+    it('should show migrate subcommands', async () => {
+      const result = await runCLI(['migrate', '--help'])
 
       expect(result.exitCode).toBe(0)
-      expect(result.stdout).toContain('Migration Support')
-      expect(result.stdout).toContain('planned for v1.0')
-      expect(result.stdout).toContain('Automatic schema diff detection')
+      expect(result.stdout).toContain('Manage database migrations')
+      expect(result.stdout).toContain('generate')
+      expect(result.stdout).toContain('up')
+      expect(result.stdout).toContain('status')
+      expect(result.stdout).toContain('reset')
     })
   })
 
