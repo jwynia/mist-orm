@@ -1,4 +1,5 @@
-import { MistConfig } from 'mist-orm'
+// import type { MistConfig } from 'mist-orm' // Uncomment when package is published
+import type { MistConfig } from '../../src/config/types'
 
 /**
  * Example configuration file

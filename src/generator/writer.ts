@@ -37,11 +37,17 @@ export const defaultFileSystem: FileSystem = {
 
 /**
  * Topologically sorts schemas based on dependencies
+ * Returns sorted schemas and any warnings about circular dependencies or missing tables
  */
-function topologicalSort(schemas: GeneratedSchema[]): GeneratedSchema[] {
+function topologicalSort(schemas: GeneratedSchema[]): {
+  sorted: GeneratedSchema[]
+  warnings: string[]
+} {
   const sorted: GeneratedSchema[] = []
   const visited = new Set<string>()
   const visiting = new Set<string>()
+  const warnings: string[] = []
+  const tableNames = new Set(schemas.map(s => s.tableName))
 
   function visit(schema: GeneratedSchema) {
     if (visited.has(schema.tableName)) {
@@ -49,7 +55,11 @@ function topologicalSort(schemas: GeneratedSchema[]): GeneratedSchema[] {
     }
 
     if (visiting.has(schema.tableName)) {
-      // Circular dependency - just continue
+      // Circular dependency detected
+      warnings.push(
+        `Circular dependency detected involving table '${schema.tableName}'. ` +
+        `This may cause issues with foreign key constraints.`
+      )
       return
     }
 
@@ -57,6 +67,15 @@ function topologicalSort(schemas: GeneratedSchema[]): GeneratedSchema[] {
 
     // Visit dependencies first
     for (const dep of schema.referencedTables) {
+      // Check if referenced table exists
+      if (!tableNames.has(dep)) {
+        warnings.push(
+          `Table '${schema.tableName}' references '${dep}' which was not found in the generated schemas. ` +
+          `Make sure the '${dep}' interface is exported.`
+        )
+        continue
+      }
+
       const depSchema = schemas.find(s => s.tableName === dep)
       if (depSchema) {
         visit(depSchema)
@@ -72,14 +91,17 @@ function topologicalSort(schemas: GeneratedSchema[]): GeneratedSchema[] {
     visit(schema)
   }
 
-  return sorted
+  return { sorted, warnings }
 }
 
 /**
  * Generates the schema index file content
  */
-function generateIndexFile(schemas: GeneratedSchema[]): string {
-  const sorted = topologicalSort(schemas)
+function generateIndexFile(schemas: GeneratedSchema[]): {
+  content: string
+  warnings: string[]
+} {
+  const { sorted, warnings } = topologicalSort(schemas)
 
   const header = `/**
  * AUTO-GENERATED - DO NOT EDIT
@@ -90,17 +112,21 @@ function generateIndexFile(schemas: GeneratedSchema[]): string {
 
   const exports = sorted.map(schema => `export * from './${schema.tableName}'`).join('\n')
 
-  return `${header}\n\n${exports}\n`
+  return {
+    content: `${header}\n\n${exports}\n`,
+    warnings,
+  }
 }
 
 /**
  * Writes generated schemas to disk
+ * Returns any warnings about circular dependencies or missing tables
  */
 export async function writeSchemas(
   schemas: GeneratedSchema[],
   outputDir: string,
   fs: FileSystem = defaultFileSystem
-): Promise<void> {
+): Promise<string[]> {
   const schemaDir = join(outputDir, 'schema')
 
   // Create directories
@@ -114,6 +140,8 @@ export async function writeSchemas(
 
   // Write index file
   const indexPath = join(schemaDir, 'index.ts')
-  const indexContent = generateIndexFile(schemas)
+  const { content: indexContent, warnings } = generateIndexFile(schemas)
   await fs.writeFile(indexPath, indexContent, 'utf-8')
+
+  return warnings
 }

@@ -47,6 +47,11 @@ export interface GenerateResult {
    * Output directory
    */
   outputDir: string
+
+  /**
+   * Warnings about circular dependencies or missing references
+   */
+  warnings: string[]
 }
 
 /**
@@ -106,15 +111,23 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
 
   // Step 5: Write output files
   onProgress?.(`Writing schemas to ${config.output}...`)
-  await writeSchemas(schemas, config.output, fs)
+  const warnings = await writeSchemas(schemas, config.output, fs)
 
   const tableNames = schemas.map(s => s.tableName)
   onProgress?.(`Done! Generated schemas for: ${tableNames.join(', ')}`)
+
+  // Report warnings if any
+  if (warnings.length > 0) {
+    for (const warning of warnings) {
+      onProgress?.(`⚠️  ${warning}`)
+    }
+  }
 
   return {
     interfacesFound: allInterfaces.length,
     schemasGenerated: schemas.length,
     tableNames,
     outputDir: config.output,
+    warnings,
   }
 }
