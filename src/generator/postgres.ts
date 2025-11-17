@@ -1,0 +1,187 @@
+/**
+ * PostgreSQL Drizzle schema generator
+ */
+
+import type { AnalyzedInterface } from './analyzer'
+import { mapTypeToColumn } from './types'
+
+export interface GeneratedSchema {
+  /**
+   * Generated TypeScript code
+   */
+  code: string
+
+  /**
+   * Table name
+   */
+  tableName: string
+
+  /**
+   * Required imports from drizzle-orm/pg-core
+   */
+  imports: string[]
+
+  /**
+   * Tables referenced by foreign keys
+   */
+  referencedTables: string[]
+}
+
+/**
+ * Converts camelCase to snake_case
+ */
+function toSnakeCase(str: string): string {
+  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
+}
+
+/**
+ * Generates a single column definition
+ */
+function generateColumn(
+  fieldName: string,
+  tsType: string,
+  optional: boolean,
+  options: {
+    isPrimaryKey?: boolean
+    pkType?: 'uuid' | 'serial' | 'text'
+    isUnique?: boolean
+    isForeignKey?: boolean
+    referencesTable?: string
+    referencesField?: string
+  } = {}
+): { code: string; imports: string[] } {
+  const columnName = toSnakeCase(fieldName)
+  const column = mapTypeToColumn(tsType, 'postgres', optional)
+  const imports = new Set<string>([column.importName])
+
+  // Build column definition
+  let columnDef: string
+
+  if (options.isPrimaryKey) {
+    if (options.pkType === 'uuid') {
+      imports.add('uuid')
+      columnDef = `${fieldName}: uuid('${columnName}').defaultRandom().primaryKey()`
+    } else if (options.pkType === 'serial') {
+      imports.add('serial')
+      columnDef = `${fieldName}: serial('${columnName}').primaryKey()`
+    } else {
+      columnDef = `${fieldName}: ${column.drizzleType}('${columnName}').primaryKey()`
+    }
+  } else if (options.isForeignKey && options.referencesTable) {
+    // Foreign key reference
+    const refTableVar = options.referencesTable
+    const refField = options.referencesField || 'id'
+
+    if (options.pkType === 'uuid' || tsType === 'string') {
+      imports.add('uuid')
+      columnDef = `${fieldName}: uuid('${columnName}').notNull().references(() => ${refTableVar}.${refField})`
+    } else {
+      columnDef = `${fieldName}: ${column.drizzleType}('${columnName}').notNull().references(() => ${refTableVar}.${refField})`
+    }
+  } else {
+    // Regular column
+    const typeCall = column.isArray
+      ? `${column.drizzleType}('${columnName}').array()`
+      : `${column.drizzleType}('${columnName}')`
+
+    let modifiers = ''
+    if (column.notNull) {
+      modifiers += '.notNull()'
+    }
+    if (options.isUnique) {
+      modifiers += '.unique()'
+    }
+
+    columnDef = `${fieldName}: ${typeCall}${modifiers}`
+  }
+
+  return {
+    code: columnDef,
+    imports: Array.from(imports),
+  }
+}
+
+/**
+ * Generates PostgreSQL Drizzle schema
+ */
+export function generatePostgresSchema(analyzed: AnalyzedInterface): GeneratedSchema {
+  const allImports = new Set<string>(['pgTable'])
+  const columnDefs: string[] = []
+  const referencedTables: string[] = []
+
+  const { interface: iface, tableName, primaryKey, foreignKeys, uniqueFields, timestamps } = analyzed
+
+  // Generate columns for each property
+  for (const prop of iface.properties) {
+    const isPrimaryKey = primaryKey && prop.name === primaryKey.field
+    const isUnique = uniqueFields.includes(prop.name)
+    const fk = foreignKeys.find(f => f.field === prop.name)
+
+    if (isPrimaryKey) {
+      const col = generateColumn(prop.name, prop.type, prop.optional, {
+        isPrimaryKey: true,
+        pkType: primaryKey.type,
+      })
+      columnDefs.push(col.code)
+      col.imports.forEach(imp => allImports.add(imp))
+    } else if (fk) {
+      const col = generateColumn(prop.name, prop.type, prop.optional, {
+        isForeignKey: true,
+        referencesTable: fk.referencesTable,
+        referencesField: fk.referencesField,
+        pkType: primaryKey?.type,
+      })
+      columnDefs.push(col.code)
+      col.imports.forEach(imp => allImports.add(imp))
+      referencedTables.push(fk.referencesTable)
+    } else {
+      const col = generateColumn(prop.name, prop.type, prop.optional, {
+        isUnique,
+      })
+      columnDefs.push(col.code)
+      col.imports.forEach(imp => allImports.add(imp))
+    }
+  }
+
+  // Add timestamp columns if configured
+  if (timestamps) {
+    allImports.add('timestamp')
+    columnDefs.push(
+      `${timestamps.createdAt}: timestamp('${toSnakeCase(timestamps.createdAt)}').defaultNow().notNull()`
+    )
+    columnDefs.push(
+      `${timestamps.updatedAt}: timestamp('${toSnakeCase(timestamps.updatedAt)}').defaultNow().notNull()`
+    )
+  }
+
+  // Build the schema code
+  const imports = Array.from(allImports).sort()
+  const importStatement = `import { ${imports.join(', ')} } from 'drizzle-orm/pg-core'`
+
+  // Add imports for referenced tables
+  const tableImports = referencedTables.map(table => `import { ${table} } from './${table}'`).join('\n')
+
+  const header = `/**
+ * AUTO-GENERATED - DO NOT EDIT
+ * Generated by mist-orm from ${iface.location.file}
+ */`
+
+  const tableDefinition = `export const ${tableName} = pgTable('${tableName}', {
+  ${columnDefs.join(',\n  ')},
+})`
+
+  const code = [
+    header,
+    importStatement,
+    tableImports || '',
+    '',
+    tableDefinition,
+  ].filter(Boolean).join('\n')
+
+  return {
+    code,
+    tableName,
+    imports,
+    referencedTables,
+  }
+}
