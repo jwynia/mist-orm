@@ -5,6 +5,8 @@
 import { mkdir, writeFile, access } from 'fs/promises'
 import { join } from 'path'
 import type { GeneratedSchema } from './postgres'
+import { generateTypeFile, generateTypesIndex } from './types-gen'
+import { generateClient } from './client'
 
 /**
  * File system abstraction for testability
@@ -125,12 +127,15 @@ function generateIndexFile(schemas: GeneratedSchema[]): {
 export async function writeSchemas(
   schemas: GeneratedSchema[],
   outputDir: string,
+  databaseType: 'postgres' | 'sqlite',
   fs: FileSystem = defaultFileSystem
 ): Promise<string[]> {
   const schemaDir = join(outputDir, 'schema')
+  const typesDir = join(outputDir, 'types')
 
   // Create directories
   await fs.mkdir(schemaDir, { recursive: true })
+  await fs.mkdir(typesDir, { recursive: true })
 
   // Write individual schema files
   for (const schema of schemas) {
@@ -138,10 +143,27 @@ export async function writeSchemas(
     await fs.writeFile(filePath, schema.code, 'utf-8')
   }
 
-  // Write index file
+  // Write schema index file
   const indexPath = join(schemaDir, 'index.ts')
   const { content: indexContent, warnings } = generateIndexFile(schemas)
   await fs.writeFile(indexPath, indexContent, 'utf-8')
+
+  // Write individual type files
+  for (const schema of schemas) {
+    const typeFilePath = join(typesDir, `${schema.tableName}.ts`)
+    const typeContent = generateTypeFile(schema)
+    await fs.writeFile(typeFilePath, typeContent, 'utf-8')
+  }
+
+  // Write types index file
+  const typesIndexPath = join(typesDir, 'index.ts')
+  const typesIndexContent = generateTypesIndex(schemas)
+  await fs.writeFile(typesIndexPath, typesIndexContent, 'utf-8')
+
+  // Write client file
+  const clientPath = join(outputDir, 'client.ts')
+  const clientContent = generateClient({ schemas, databaseType })
+  await fs.writeFile(clientPath, clientContent, 'utf-8')
 
   return warnings
 }

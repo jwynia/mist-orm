@@ -20,7 +20,7 @@ describe('File Writer', () => {
       },
     ]
 
-    await writeSchemas(schemas, './.mist', mockFs)
+    await writeSchemas(schemas, './.mist', 'postgres', mockFs)
 
     expect(mockFs.mkdir).toHaveBeenCalledWith(join('./.mist', 'schema'), { recursive: true })
   })
@@ -47,7 +47,7 @@ describe('File Writer', () => {
       },
     ]
 
-    await writeSchemas(schemas, './.mist', mockFs)
+    await writeSchemas(schemas, './.mist', 'postgres', mockFs)
 
     expect(mockFs.writeFile).toHaveBeenCalledWith(
       join('./.mist', 'schema', 'users.ts'),
@@ -83,7 +83,7 @@ describe('File Writer', () => {
       },
     ]
 
-    await writeSchemas(schemas, './.mist', mockFs)
+    await writeSchemas(schemas, './.mist', 'postgres', mockFs)
 
     expect(mockFs.writeFile).toHaveBeenCalledWith(
       join('./.mist', 'schema', 'index.ts'),
@@ -119,7 +119,7 @@ describe('File Writer', () => {
       },
     ]
 
-    await writeSchemas(schemas, './.mist', mockFs)
+    await writeSchemas(schemas, './.mist', 'postgres', mockFs)
 
     const indexCall = (mockFs.writeFile as any).mock.calls.find(
       (call: any[]) => call[0] === join('./.mist', 'schema', 'index.ts')
@@ -168,7 +168,7 @@ describe('File Writer', () => {
       },
     ]
 
-    await writeSchemas(schemas, './.mist', mockFs)
+    await writeSchemas(schemas, './.mist', 'postgres', mockFs)
 
     expect(mockFs.mkdir).toHaveBeenCalledWith(join('./.mist', 'schema'), { recursive: true })
   })
