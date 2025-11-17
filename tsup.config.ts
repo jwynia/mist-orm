@@ -13,4 +13,10 @@ export default defineConfig({
   treeshake: true,
   minify: false,
   shims: true,
+  external: [
+    'typescript',
+    'better-sqlite3',
+    'postgres',
+  ],
+  noExternal: [],
 })
