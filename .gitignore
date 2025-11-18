@@ -49,5 +49,9 @@ temp/
 .claude/claude.json.backup
 .claude/.credentials.json
 .claude/.claude.json
+.claud/file-history/
 .gitignore
 .agents
+claude.json.backup
+.claude/history.jsonl
+.claude/.claude.json.backup

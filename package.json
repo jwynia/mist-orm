@@ -1,6 +1,6 @@
 {
   "name": "mist-orm",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Convention-based data layer for TypeScript. Auto-generate Drizzle ORM schemas from TypeScript interfaces.",
   "keywords": [
     "typescript",
@@ -48,12 +48,13 @@
     "dev": "tsup --watch",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
+    "test:integration": "vitest --config vitest.integration.config.ts --run",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "drizzle-orm": "^0.33.0"
+    "drizzle-orm": "^0.44.7"
   },
   "peerDependenciesMeta": {
     "postgres": {
@@ -69,6 +70,7 @@
     "commander": "^12.1.0",
     "drizzle-kit": "^0.31.7",
     "glob": "^11.0.3",
+    "jiti": "^2.6.1",
     "ora": "^8.1.0"
   },
   "devDependencies": {
@@ -77,7 +79,7 @@
     "@typescript-eslint/eslint-plugin": "^8.11.0",
     "@typescript-eslint/parser": "^8.11.0",
     "better-sqlite3": "^11.5.0",
-    "drizzle-orm": "^0.33.0",
+    "drizzle-orm": "^0.44.7",
     "eslint": "^9.13.0",
     "postgres": "^3.4.4",
     "prettier": "^3.3.3",

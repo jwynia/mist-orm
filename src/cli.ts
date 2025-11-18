@@ -20,7 +20,7 @@ const program = new Command()
 program
   .name('mist')
   .description('Convention-based Drizzle ORM schema generator')
-  .version('1.0.0')
+  .version('0.1.0')
 
 // Global options
 program.option('-c, --config <path>', 'Path to config file', './mist.config.ts')

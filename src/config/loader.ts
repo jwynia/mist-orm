@@ -90,9 +90,11 @@ export function resolveConfig(config: MistConfig): ResolvedMistConfig {
  */
 export async function loadConfig(configPath: string = './mist.config.ts'): Promise<ResolvedMistConfig> {
   try {
-    // Dynamic import to load TypeScript config file
-    const configModule = await import(configPath)
-    const config = configModule.default as MistConfig
+    // Use jiti for runtime TypeScript/ESM loading
+    const { createJiti } = await import('jiti')
+    const jiti = createJiti(import.meta.url, { interopDefault: true })
+
+    const config = jiti(configPath) as MistConfig
 
     return resolveConfig(config)
   } catch (error) {
