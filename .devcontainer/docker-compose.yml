@@ -1,0 +1,30 @@
+services:
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ../..:/workspaces:cached
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    command: sleep infinity
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    volumes:
+      - mist-postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: mist_user
+      POSTGRES_PASSWORD: mist-orm-2025!
+      POSTGRES_DB: mist_dev
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - 8060:8080
+
+volumes:
+  mist-postgres-data:
