@@ -17,13 +17,13 @@
   "author": "",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jwynia/mist-orm.git"
+    "url": "git+https://github.com/jwynia/mist-orm.git"
   },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "mist": "./dist/cli.js"
+    "mist": "dist/cli.js"
   },
   "exports": {
     ".": {
