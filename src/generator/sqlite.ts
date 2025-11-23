@@ -74,7 +74,8 @@ function generateColumn(
     const refField = options.referencesField || 'id'
 
     imports.add('text')
-    columnDef = `${fieldName}: text('${columnName}').notNull().references(() => ${refTableVar}.${refField})`
+    const nullConstraint = column.notNull ? '.notNull()' : ''
+    columnDef = `${fieldName}: text('${columnName}')${nullConstraint}.references(() => ${refTableVar}.${refField})`
   } else if (options.isTimestamp) {
     // Timestamps in SQLite are stored as integers (unix time)
     imports.add('integer')

@@ -74,9 +74,11 @@ function generateColumn(
 
     if (options.pkType === 'uuid' || tsType === 'string') {
       imports.add('uuid')
-      columnDef = `${fieldName}: uuid('${columnName}').notNull().references(() => ${refTableVar}.${refField})`
+      const nullConstraint = column.notNull ? '.notNull()' : ''
+      columnDef = `${fieldName}: uuid('${columnName}')${nullConstraint}.references(() => ${refTableVar}.${refField})`
     } else {
-      columnDef = `${fieldName}: ${column.drizzleType}('${columnName}').notNull().references(() => ${refTableVar}.${refField})`
+      const nullConstraint = column.notNull ? '.notNull()' : ''
+      columnDef = `${fieldName}: ${column.drizzleType}('${columnName}')${nullConstraint}.references(() => ${refTableVar}.${refField})`
     }
   } else {
     // Regular column
