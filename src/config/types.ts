@@ -40,9 +40,11 @@ export interface MistConfig {
 
     /**
      * Custom foreign key mappings
-     * @example { authorId: 'users' }
+     * - string value: map to specific table (e.g., { authorId: 'users' })
+     * - false: disable FK generation for this field (e.g., { tenantId: false })
+     * @example { authorId: 'users', externalId: false }
      */
-    foreignKeys?: Record<string, string>
+    foreignKeys?: Record<string, string | false>
 
     /**
      * Unique constraint definitions per table

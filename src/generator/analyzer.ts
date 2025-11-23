@@ -110,9 +110,20 @@ export function detectForeignKeys(
       continue
     }
 
+    // Check for @noForeignKey JSDoc tag - allows opting out of FK generation
+    if (prop.jsDocTags.noForeignKey !== undefined) {
+      continue
+    }
+
     // Check for explicit mapping in config
     const explicitMapping = config.conventions.foreignKeys[prop.name]
-    if (explicitMapping) {
+    if (explicitMapping !== undefined) {
+      // Check if explicitly disabled with false
+      if (explicitMapping === false) {
+        continue
+      }
+
+      // Otherwise it's a string mapping to a specific table
       foreignKeys.push({
         field: prop.name,
         referencesTable: explicitMapping,
