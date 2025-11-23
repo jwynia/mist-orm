@@ -33,9 +33,9 @@ export interface AnalyzedInterface {
   tableName: string
 
   /**
-   * Primary key information
+   * Primary key information (always present - auto-generated if not in interface)
    */
-  primaryKey: PrimaryKeyInfo | null
+  primaryKey: PrimaryKeyInfo
 
   /**
    * Foreign key relationships
@@ -55,26 +55,37 @@ export interface AnalyzedInterface {
 
 /**
  * Detects the primary key field and type
+ *
+ * Auto-generates a primary key if not present in the interface:
+ * - PostgreSQL: uuid with defaultRandom()
+ * - SQLite: integer with auto-increment
  */
 export function detectPrimaryKey(
   iface: ParsedInterface,
   config: ResolvedMistConfig
-): PrimaryKeyInfo | null {
+): PrimaryKeyInfo {
   const pkFieldName = config.conventions.primaryKey
   const pkField = iface.properties.find(p => p.name === pkFieldName)
 
-  if (!pkField) {
-    return null
-  }
-
-  // Determine type based on TypeScript type
+  // Determine type based on user's field type OR auto-generate based on DB type
   let type: 'uuid' | 'serial' | 'text'
-  if (pkField.type === 'string') {
-    type = 'uuid' // Default string IDs to UUID
-  } else if (pkField.type === 'number') {
-    type = 'serial' // Auto-incrementing integer
+
+  if (pkField) {
+    // User defined primary key field - use their type
+    if (pkField.type === 'string') {
+      type = 'uuid' // Default string IDs to UUID
+    } else if (pkField.type === 'number') {
+      type = 'serial' // Auto-incrementing integer
+    } else {
+      type = 'text' // Fallback
+    }
   } else {
-    type = 'text' // Fallback
+    // Auto-generate primary key based on database type
+    if (config.database.type === 'postgres') {
+      type = 'uuid' // PostgreSQL: use UUID with defaultRandom()
+    } else {
+      type = 'serial' // SQLite: use auto-increment integer
+    }
   }
 
   return {

@@ -83,7 +83,7 @@ describe('Convention Detector', () => {
       expect(pk?.field).toBe('_id')
     })
 
-    it('should return null if no primary key field found', () => {
+    it('should auto-generate primary key if not in interface (PostgreSQL)', () => {
       const iface: ParsedInterface = {
         name: 'User',
         properties: [
@@ -94,7 +94,35 @@ describe('Convention Detector', () => {
 
       const pk = detectPrimaryKey(iface, defaultConfig)
 
-      expect(pk).toBeNull()
+      expect(pk).toEqual({
+        field: 'id',
+        type: 'uuid', // Auto-generated for PostgreSQL
+      })
+    })
+
+    it('should auto-generate primary key if not in interface (SQLite)', () => {
+      const config = {
+        ...defaultConfig,
+        database: {
+          ...defaultConfig.database,
+          type: 'sqlite' as const,
+        },
+      }
+
+      const iface: ParsedInterface = {
+        name: 'User',
+        properties: [
+          { name: 'name', type: 'string', optional: false, jsDocTags: {} },
+        ],
+        location: { file: 'test.ts', line: 1 },
+      }
+
+      const pk = detectPrimaryKey(iface, config)
+
+      expect(pk).toEqual({
+        field: 'id',
+        type: 'serial', // Auto-generated for SQLite (integer auto-increment)
+      })
     })
   })
 

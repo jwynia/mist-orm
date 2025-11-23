@@ -1294,6 +1294,213 @@ All 123 tests passing (including 8 new CLI tests)
 
 ---
 
+## Alpha Testing Bug Fixes
+
+**Source:** GitHub issues reported by alpha testing agent in separate workspace
+**Retrieved:** 2025-11-23
+**Total Issues:** 5 (2 critical, 1 high, 1 medium, 1 low)
+
+### BUG-11: Primary Keys Not Auto-Generated
+**Status:** Not Started
+**Priority:** CRITICAL - Blocker
+**Severity:** Critical
+**Effort:** 4-6 hours
+**GitHub:** https://github.com/jwynia/mist-orm/issues/11
+**Dependencies:** Relates to Phase 1.3 (Convention Detector)
+
+**Problem:**
+Primary keys are not being auto-generated in Drizzle schemas despite documentation stating this feature exists. Generated schemas have NO `id` field at all, making the ORM completely unusable.
+
+**Impact:**
+- Cannot create valid database tables (tables need primary keys)
+- Cannot insert records (no primary key to reference)
+- Cannot query by ID
+- Foreign key references fail (referencing non-existent `id` field)
+- Migrations cannot be applied to invalid schemas
+
+**Expected Behavior:**
+Every table should automatically get an `id` primary key:
+- **PostgreSQL**: `uuid` with `defaultRandom()`
+- **SQLite**: `integer` with auto-increment
+
+**Tasks:**
+- [ ] Review primary key generation code in convention detector (Phase 1.3)
+- [ ] Fix schema generator to add primary key fields
+- [ ] Update snapshot generation to include primaryKey metadata
+- [ ] Write regression tests for primary key generation
+- [ ] Verify fix works for both PostgreSQL and SQLite
+- [ ] Test with foreign key references to ensure they work
+
+**Acceptance Criteria:**
+- All generated schemas include `id` field
+- PostgreSQL uses `uuid('id').defaultRandom().primaryKey()`
+- SQLite uses `integer('id').primaryKey()` for auto-increment
+- Snapshot metadata includes `"primaryKey": "id"`
+- Foreign key references work correctly
+- All existing tests still pass
+
+---
+
+### BUG-8: Optional Fields Generated as .notNull()
+**Status:** Not Started
+**Priority:** CRITICAL - Type Safety Violation
+**Severity:** High
+**Effort:** 3-4 hours
+**GitHub:** https://github.com/jwynia/mist-orm/issues/8
+**Dependencies:** Relates to Phase 1.2 (Type Mapper)
+
+**Problem:**
+TypeScript optional fields (marked with `?`) are being generated as `.notNull()` in Drizzle schemas, violating type safety and preventing inserting records without those fields.
+
+**Impact:**
+- Cannot insert records without optional fields (database rejects them)
+- Type mismatch between TypeScript types and database schema
+- Violates principle that TypeScript interfaces are source of truth
+- Forces users to provide dummy values for optional fields
+
+**Expected Behavior:**
+Optional fields in TypeScript should generate nullable columns:
+- `field: string` → `text('field').notNull()`
+- `field?: string` → `text('field')` (no .notNull())
+- `field: string | null` → `text('field')` (no .notNull())
+
+**Tasks:**
+- [ ] Review type mapper to check for `optional` property handling
+- [ ] Fix schema generator to omit `.notNull()` for optional fields
+- [ ] Handle union types with null/undefined
+- [ ] Write tests for optional field generation
+- [ ] Verify both `field?: type` and `field: type | null` syntax work
+- [ ] Test insertion with omitted optional fields
+
+**Acceptance Criteria:**
+- Optional fields (`field?: type`) generate without `.notNull()`
+- Union types with null (`field: type | null`) generate without `.notNull()`
+- Can insert records with optional fields omitted
+- Type safety maintained between TS and DB schema
+- All existing tests still pass
+
+---
+
+### BUG-7: Unconditional Database Driver Imports
+**Status:** Not Started
+**Priority:** High
+**Severity:** Medium-High
+**Effort:** 2-3 hours
+**GitHub:** https://github.com/jwynia/mist-orm/issues/7
+**Dependencies:** Relates to Phase 2.1 (Database Connection Management)
+
+**Problem:**
+mist-orm imports both `postgres` and `better-sqlite3` packages unconditionally, causing import errors if both drivers aren't installed, even when only one database type is being used.
+
+**Impact:**
+- Unnecessary dependencies in node_modules
+- Larger bundle sizes in production
+- Potential security issues from unused dependencies
+- Confusing error messages for users
+- Deployment complexity (needing to install unused drivers)
+
+**Expected Behavior:**
+Only the database driver specified in the configuration should be required. Dynamic imports should be used based on detected database type.
+
+**Tasks:**
+- [ ] Review connection management code in `src/runtime/connection.ts`
+- [ ] Replace static imports with dynamic imports
+- [ ] Implement database type detection before import
+- [ ] Add proper error handling for missing required driver
+- [ ] Update peer dependencies documentation
+- [ ] Write tests for both database types (independently)
+- [ ] Test error message when required driver is missing
+
+**Acceptance Criteria:**
+- Only imports the database driver actually needed
+- SQLite projects don't require postgres package
+- PostgreSQL projects don't require better-sqlite3 package
+- Clear error message when required driver is missing
+- No breaking changes to existing functionality
+- All existing tests still pass
+
+---
+
+### ENHANCEMENT-10: Foreign Key Opt-Out Mechanism
+**Status:** Not Started
+**Priority:** Medium
+**Severity:** Medium
+**Effort:** 4-6 hours
+**GitHub:** https://github.com/jwynia/mist-orm/issues/10
+**Dependencies:** Relates to Phase 1.3 (Convention Detector)
+
+**Problem:**
+mist-orm automatically creates foreign key constraints for all fields ending in `Id`, even when referenced tables don't exist in the domain model. There's no way to opt out of this behavior for specific fields.
+
+**Impact:**
+- Confusing warnings for legitimate use cases
+- Generated code has invalid imports (to non-existent tables)
+- No way to opt out for fields that happen to end in `Id`
+- Overly aggressive convention assumption
+
+**Use Cases Where This Fails:**
+1. External IDs: `tenantId` is a string ID from external auth system (not a DB table)
+2. Legacy IDs: `legacyId` is an ID from a migration (not an FK)
+3. Correlation IDs: `requestId`, `traceId` are for observability (not FKs)
+4. Polymorphic references: `sourceId` could reference multiple table types
+
+**Proposed Solutions:**
+1. **JSDoc opt-out**: `/** @noForeignKey */ tenantId: string`
+2. **Config override**: Enhance `conventions.foreignKeys` to support explicit disabling
+3. **Strict mode**: Only generate FKs when target table exists (emit error if missing)
+
+**Tasks:**
+- [ ] Design opt-out mechanism (choose from proposed solutions)
+- [ ] Implement JSDoc `@noForeignKey` annotation support
+- [ ] Enhance config `conventions.foreignKeys` to support `false` value
+- [ ] Update foreign key detection to check for opt-out
+- [ ] Add validation: error (not warning) if FK target missing and no opt-out
+- [ ] Document opt-out mechanisms in conventions.md
+- [ ] Write tests for opt-out scenarios
+- [ ] Update examples to show external ID patterns
+
+**Acceptance Criteria:**
+- Can mark fields to skip FK generation
+- Fields with `@noForeignKey` don't generate FK constraints
+- Config can disable FK for specific fields
+- Clear error (not warning) for missing FK targets without opt-out
+- Documentation covers external ID use cases
+- All existing tests still pass
+
+---
+
+### DOC-9: CLI Command Documentation Fix
+**Status:** Not Started
+**Priority:** Low (Quick Win)
+**Severity:** Low
+**Effort:** 15-30 minutes
+**GitHub:** https://github.com/jwynia/mist-orm/issues/9
+**Dependencies:** None
+
+**Problem:**
+README documentation shows migration commands with colons (`migrate:generate`), but the actual CLI uses spaces (`migrate generate`). This causes confusion when users copy-paste commands from documentation.
+
+**Impact:**
+- User confusion (copy-paste from README doesn't work)
+- Error messages when following documentation
+- Inconsistency between docs and implementation
+
+**Tasks:**
+- [ ] Search README.md for all CLI command examples
+- [ ] Replace `migrate:generate` with `migrate generate`
+- [ ] Replace `migrate:up` with `migrate up`
+- [ ] Replace `migrate:status` with `migrate status`
+- [ ] Replace `migrate:reset` with `migrate reset` (if present)
+- [ ] Verify all CLI examples in README are correct
+- [ ] Check any other documentation files for same issue
+
+**Acceptance Criteria:**
+- All CLI commands in README use correct syntax (spaces, not colons)
+- Examples can be copy-pasted and work correctly
+- No other documentation inconsistencies found
+
+---
+
 ## Backlog Maintenance
 
 This backlog will be updated as work progresses:
@@ -1318,8 +1525,9 @@ This backlog will be updated as work progresses:
 
 ## Metadata
 - **Created:** 2025-11-16
-- **Last Updated:** 2025-11-16
+- **Last Updated:** 2025-11-23
 - **Updated By:** Claude (AI Agent)
 
 ## Change History
 - 2025-11-16: Created comprehensive backlog with detailed tasks for all 5 phases
+- 2025-11-23: Added Alpha Testing Bug Fixes section with 5 issues from GitHub (2 critical, 1 high, 1 medium enhancement, 1 low doc fix)

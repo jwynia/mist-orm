@@ -110,20 +110,31 @@ export function generateSqliteSchema(analyzed: AnalyzedInterface): GeneratedSche
 
   const { interface: iface, tableName, primaryKey, foreignKeys, uniqueFields, timestamps } = analyzed
 
-  // Generate columns for each property
+  // Add primary key field first (auto-generated if not in interface)
+  const pkField = iface.properties.find(p => p.name === primaryKey.field)
+  const pkCol = generateColumn(
+    primaryKey.field,
+    pkField?.type || 'number', // Default to number for SQLite auto-increment
+    false, // Primary key is never optional
+    {
+      isPrimaryKey: true,
+      pkType: primaryKey.type,
+    }
+  )
+  columnDefs.push(pkCol.code)
+  pkCol.imports.forEach(imp => allImports.add(imp))
+
+  // Generate columns for each property (skip primary key since we already added it)
   for (const prop of iface.properties) {
-    const isPrimaryKey = primaryKey && prop.name === primaryKey.field
+    // Skip primary key - already added above
+    if (prop.name === primaryKey.field) {
+      continue
+    }
+
     const isUnique = uniqueFields.includes(prop.name)
     const fk = foreignKeys.find(f => f.field === prop.name)
 
-    if (isPrimaryKey) {
-      const col = generateColumn(prop.name, prop.type, prop.optional, {
-        isPrimaryKey: true,
-        pkType: primaryKey.type,
-      })
-      columnDefs.push(col.code)
-      col.imports.forEach(imp => allImports.add(imp))
-    } else if (fk) {
+    if (fk) {
       const col = generateColumn(prop.name, prop.type, prop.optional, {
         isForeignKey: true,
         referencesTable: fk.referencesTable,
