@@ -113,7 +113,7 @@ export interface User {
 }
 
 # 2. Generate a migration
-npx mist migrate:generate
+npx mist migrate generate
 
 # Output:
 # ✓ Generated 1 schemas
@@ -123,10 +123,10 @@ npx mist migrate:generate
 #   • 0001_warm_captain_britain.sql
 #
 # To apply the migration, run:
-#   mist migrate:up
+#   mist migrate up
 
 # 3. Apply the migration
-npx mist migrate:up
+npx mist migrate up
 
 # Output:
 # ✓ Configuration loaded
@@ -135,7 +135,7 @@ npx mist migrate:up
 # ✓ Database is up to date!
 
 # 4. Check migration status anytime
-npx mist migrate:status
+npx mist migrate status
 
 # Output:
 # 📊 Migration Status
@@ -150,9 +150,9 @@ npx mist migrate:status
 
 **Migration workflow:**
 - Modify your TypeScript interfaces
-- Run `mist migrate:generate` to detect changes and create SQL migrations
+- Run `mist migrate generate` to detect changes and create SQL migrations
 - Review the generated `.mist/migrations/*.sql` files
-- Run `mist migrate:up` to apply migrations to your database
+- Run `mist migrate up` to apply migrations to your database
 - Migrations are tracked automatically - only pending migrations will be applied
 
 ## Features
@@ -225,12 +225,12 @@ npx mist dev
 
 Manage database migrations with automatic schema diff detection.
 
-#### `mist migrate:generate`
+#### `mist migrate generate`
 
 Generate a new migration from schema changes.
 
 ```bash
-mist migrate:generate [options]
+mist migrate generate [options]
 
 Options:
   -c, --config <path>  Path to config file (default: "./mist.config.ts")
@@ -239,7 +239,7 @@ Options:
 
 **Example:**
 ```bash
-npx mist migrate:generate
+npx mist migrate generate
 ```
 
 This command:
@@ -249,12 +249,12 @@ This command:
 4. Generates SQL migration files via Drizzle Kit
 5. Saves a new snapshot for future comparisons
 
-#### `mist migrate:up`
+#### `mist migrate up`
 
 Apply pending migrations to the database.
 
 ```bash
-mist migrate:up [options]
+mist migrate up [options]
 
 Options:
   -c, --config <path>  Path to config file (default: "./mist.config.ts")
@@ -263,17 +263,17 @@ Options:
 
 **Example:**
 ```bash
-npx mist migrate:up
+npx mist migrate up
 ```
 
 Applies all pending migrations in order and tracks them in the database.
 
-#### `mist migrate:status`
+#### `mist migrate status`
 
 Show migration status and information.
 
 ```bash
-mist migrate:status [options]
+mist migrate status [options]
 
 Options:
   -c, --config <path>  Path to config file (default: "./mist.config.ts")
@@ -281,7 +281,7 @@ Options:
 
 **Example:**
 ```bash
-npx mist migrate:status
+npx mist migrate status
 ```
 
 Displays:
@@ -291,12 +291,12 @@ Displays:
 - Current version
 - Latest snapshot info
 
-#### `mist migrate:reset`
+#### `mist migrate reset`
 
 Reset all migrations (destructive operation).
 
 ```bash
-mist migrate:reset --force
+mist migrate reset --force
 
 Options:
   --force              Required to confirm the operation
@@ -304,7 +304,7 @@ Options:
 
 **Example:**
 ```bash
-npx mist migrate:reset --force
+npx mist migrate reset --force
 ```
 
 ⚠️ **Warning:** This drops all tables and reapplies all migrations. Use with caution!
